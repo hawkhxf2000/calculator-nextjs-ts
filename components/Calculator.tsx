@@ -34,6 +34,7 @@ export default function Calculator() {
         setNumberToCalc(initValue);
         setOperator("");
         setOperatorClick(false);
+        setIsCalcEnd(false);
     }
 
     const handleOperatorClick = (e:React.MouseEvent<HTMLDivElement>) => {
@@ -48,16 +49,57 @@ export default function Calculator() {
 
     }
 
+    const handleBackSpace = (() => {
+        if(isCalcEnd){
+            return;
+        }
+
+        let strLength;
+        if(operatorClick){
+            strLength = numberToCalc.numberB.length;
+            setNumberToCalc({...numberToCalc, numberB: (numberToCalc.numberB.slice(0, strLength-1))})
+        }else{
+            strLength = numberToCalc.numberA.length;
+            setNumberToCalc({...numberToCalc, numberA: (numberToCalc.numberA.slice(0, strLength-1))})
+        }
+        strLength = textDisplay.length;
+        setTextDisplay(textDisplay.slice(0,strLength-1));
+    })
+
     const handleEqualClick = async () => {
-        let operatorParam = operator == "+" ? "%2B" : operator;
+        if(isCalcEnd){
+            return;
+        }
+
+        let operatorParam;
+
+        switch (operator) {
+            case "+":
+                operatorParam = "%2B";
+                break;
+            case "x":
+                operatorParam = "*";
+                break;
+            default:
+                operatorParam = operator;
+                break;
+        }
+
         let url = "/api/calcFunction?numberA=" + numberToCalc.numberA
                     + "&numberB=" + numberToCalc.numberB
                     + "&operator=" + operatorParam;
         await fetch(url).then(response=>{
-            response.json().then(data=>{
-                console.log(data.result+"");
-                setNumberToCalc({...numberToCalc, numberB: data.result+""})
-            })
+            if(response.status == 400){
+                response.json().then(data=>{
+                    alert(data);
+                    handleClear();
+                })
+            }else{
+                response.json().then(data=>{
+                    console.log(data);
+                    setNumberToCalc({...numberToCalc, numberB: data.result+""})
+                })
+            }
         })
         setOperator("");
         setIsCalcEnd(true);
@@ -75,8 +117,8 @@ export default function Calculator() {
                     </div>
                     <div className={styles.calcButtonRow}>
                         <div className={styles.buttonC} onClick={handleClear}>C</div>
-                        <div className={styles.buttonL}>≠</div>
-                        <div className={styles.buttonL}>{"<-"}</div>
+                        <div className={styles.buttonL}>%</div>
+                        <div className={styles.buttonL} onClick={handleBackSpace}>{"<-"}</div>
                         <div className={styles.buttonL} onClick={handleOperatorClick}>/</div>
                     </div>
                     <div className={styles.calcButtonRow}>
@@ -98,7 +140,7 @@ export default function Calculator() {
                         <div className={styles.buttonL} onClick={handleOperatorClick} >+</div>
                     </div>
                     <div className={styles.calcButtonRow}>
-                        <div className={styles.button}>.</div>
+                        <div className={styles.button} onClick={handleNumberClick}>.</div>
                         <div className={styles.button} onClick={handleNumberClick}>0</div>
                         <div className={styles.button}>!</div>
                         <div className={styles.buttonL} onClick={handleEqualClick}>=</div>
